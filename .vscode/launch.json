@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "type": "java",
+      "name": "Attach: Java (Port 5006)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 5006
+    },
+    
+    {
+      "name": "Python: running_BC",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/running_BC.py",
+      //"args": [""],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+
+    {
+      "name": "Python: selfplay_ppoBC_PPO_commented",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/selfplay_ppoBC_PPO_commented.py",
+      "args": ["--num-bot-envs","1","--num-selfplay-envs","2", "--BCtraining", "False", "--render"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Python + Java (Attach)",
+      "configurations": ["Python: selfplay_ppoBC_PPO_commented", "Attach: Java (Port 5005)"]
+    }
+  ]
+}
