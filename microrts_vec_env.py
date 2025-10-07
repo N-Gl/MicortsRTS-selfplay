@@ -121,17 +121,33 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 "RAISocketAI.jar",
                 "microrts.jar",
                 "Coac.jar",
-                "lib/bots/Droplet.jar",
-                "lib/bots/GRojoA3N.jar",
-                "lib/bots/Izanagi.jar",
-                "lib/bots/MixedBot.jar",
-                "lib/bots/TiamatBot.jar",
-                "lib/bots/UMSBot.jar",
-                "lib/bots/mayariBot.jar",  # "MindSeal.jar"
+                "Droplet.jar",
+                "GRojoA3N.jar",
+                "Izanagi.jar",
+                "MixedBot.jar",
+                "TiamatBot.jar",
+                "UMSBot.jar",
+                "mayariBot.jar",  # "MindSeal.jar"
             ]
             for jar in jars:
                 jpype.addClassPath(os.path.join(self.microrts_path, jar))
-            jpype.startJVM(convertStrings=False)
+
+
+            # new
+            # If the environment variable MICRORTS_JDWP_PORT is set, include
+            # the JDWP agent arguments so the JVM is started in debug mode.
+            # This ensures classpaths are added before starting the JVM and
+            # prevents the "JVM already started" issue when the script
+            # attempted to start the JVM earlier without the proper classpath.
+            jdwp_port = os.environ.get("MICRORTS_JDWP_PORT")
+            jdwp_suspend = os.environ.get("MICRORTS_JDWP_SUSPEND", "y")
+            if jdwp_port:
+                agent_arg = f"-agentlib:jdwp=transport=dt_socket,server=y,suspend={jdwp_suspend},address=*:{jdwp_port}"
+                print(f"Starting JVM with JDWP debug agent on port {jdwp_port} (suspend={jdwp_suspend})")
+                jpype.startJVM(agent_arg, convertStrings=False)
+            else:
+                jpype.startJVM(convertStrings=False)
+
             atexit.register(jpype.shutdownJVM)
 
         # start microrts client

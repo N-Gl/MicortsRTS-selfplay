@@ -4,10 +4,11 @@
 
     {
       "type": "java",
-      "name": "Attach: Java (Port 5006)",
+      "name": "Attach: Java (Port 5005)",
       "request": "attach",
       "hostName": "localhost",
-      "port": 5006
+      "port": 5005,
+      "preLaunchTask": "wait-for-jdwp-5005"
     },
     
     {
@@ -28,12 +29,22 @@
       "args": ["--num-bot-envs","1","--num-selfplay-envs","2", "--BCtraining", "False", "--render"],
       "console": "integratedTerminal",
       "justMyCode": false
+    },
+
+    {
+      "name": "Python: selfplay_ppoBC_PPO_commented (J DB)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/selfplay_ppoBC_PPO_commented.py",
+      "args": ["--num-bot-envs","1","--num-selfplay-envs","2", "--BCtraining", "False", "--render", "--dbg"],
+      "console": "integratedTerminal",
+      "justMyCode": false
     }
   ],
   "compounds": [
     {
       "name": "Python + Java (Attach)",
-      "configurations": ["Python: selfplay_ppoBC_PPO_commented", "Attach: Java (Port 5005)"]
+      "configurations": ["Python: selfplay_ppoBC_PPO_commented (J DB)", "Attach: Java (Port 5005)"]
     }
   ]
 }

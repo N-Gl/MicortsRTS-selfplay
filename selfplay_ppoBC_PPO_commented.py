@@ -36,6 +36,13 @@ import os
 from stable_baselines3.common.vec_env import VecEnvWrapper, VecVideoRecorder
 from microrts_space_transform import MicroRTSSpaceTransform
 from microrts_space_transformbots import MicroRTSSpaceTransformbot
+
+
+
+import jpype
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PPO agent')
     # Common arguments
@@ -116,14 +123,12 @@ if __name__ == "__main__":
     if not args.seed:
         args.seed = int(time.time())
 
+# TODO (selfplay): setze 
+# export MICRORTS_JDWP_PORT=5005
+# export MICRORTS_JDWP_SUSPEND=y   # oder 'n' wenn nicht suspendiert werden soll
+# für Debugging, schließe die Fehlermeldung erst nach ein paar Sekunden mit "Debug anyway"
 
-# new TODO (selfplay): entfernen?
-if args.dbg:
-    import jpype
-    jpype.startJVM(
-    jpype.getDefaultJVMPath(),
-    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5006"
-    )
+
 
 args.num_envs = args.num_selfplay_envs + args.num_bot_envs
 args.batch_size = int(args.num_envs * args.num_steps)
