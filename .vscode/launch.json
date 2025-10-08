@@ -8,7 +8,11 @@
       "request": "attach",
       "hostName": "localhost",
       "port": 5005,
-      "preLaunchTask": "wait-for-jdwp-5005"
+      "preLaunchTask": "wait-for-jdwp-5005",
+      "sourcePaths": [
+            "${workspaceFolder}/decompiled/RAISocketAI",
+            "/home/cookiekiller100/Uni/BA/new/MicroRTS/decompiled/RAISocketAI"
+          ]
     },
     
     {
@@ -48,3 +52,4 @@
     }
   ]
 }
+
