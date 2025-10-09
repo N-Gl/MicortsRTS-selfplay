@@ -1391,10 +1391,32 @@ for update in range(starting_update, num_updates + 1):
         # =============
         # invalid_action_masks angewandt
         # =============
+
+
+        # Debug Beispiel
+        # valid_actions = np.array([np.array([34.0, 0.0, 1.0, 3.0, 1.0, 2.0, 3.0, 21.0]),
+        #                            np.array([238.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        #                            np.array([34.0, 0.0, 2.0, 0.0, 0.0, 2.0, 3.0, 24.0])])
+        # valid_actions_counts = [1, 1, 1]
+
         valid_actions = real_action[invalid_action_masks[step]
                                     [:, :, 0].bool().cpu().numpy()]
         valid_actions_counts = invalid_action_masks[step][:, :, 0].sum(
             1).long().cpu().numpy()
+        '''
+        valid_actions:
+        [[Pos, Type, move direction, harvest direction, return direction, produce direction, produce type, relative attack position],
+         [Spiel0 (Spieler1)],
+         [Spiel1 (Spieler0)]]
+
+        Pos: 0-255 (16*16) links oben nach rechts unten (obenecke = 0)
+        Type: 0: NOP, 1: Move, 2: Harvest, 3: Return, 4: Produce, 5: Attack (wenn z.B.: move direction = 1, aber Type = 2 --> move direction wird ignoriert)
+        direction: 0: North, 1: East, 2: South, 3: West
+        produce type: 0: Worker, 1: Light, 2: Ranged, 3: Heavy
+        relative attack position: 0-255 (16*16) links oben nach rechts unten (obenecke = 0) wo angegriffen wird
+        '''
+
+
 
         java_valid_actions = []
         valid_action_idx = 0

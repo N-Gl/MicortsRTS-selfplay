@@ -4,3 +4,5 @@
 /videos/
 /trained_models/
 /trained_models.zip/
+/wandb/
+/__pycache__/
