@@ -115,6 +115,8 @@ if __name__ == "__main__":
                         help='If toggled, only use winning episodes for BC training')
     parser.add_argument('--render', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
                         help='If toggled, render the environment during training')
+    parser.add_argument('--render_all', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
+                        help='If toggled, render ALL underlying environments (inefficient, for debugging)')
     parser.add_argument('--dbg', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
                         help='If toggled, run the script in debug mode (JPype in debug mode, wait for debugger to attach to port 5005)')
     
@@ -348,6 +350,41 @@ envsT = MicroRTSSpaceTransform(envs)
 # print(envsT.step_wait.__qualname__)
 
 envsT = VecstatsMonitor(envsT, args.gamma)
+
+# TODO (render) new
+# Helper to render all underlying environments (inefficient, for debugging)
+def render_all_envs(env_transform):
+    """Try to render every underlying env. This is intentionally
+    inefficient and for debugging only. It attempts multiple strategies
+    depending on the wrapped object (vec client, interface, or sub-clients).
+    """
+    # Try direct vector render first
+    try:
+        if hasattr(env_transform, 'interface') and hasattr(env_transform.interface, 'vec_client'):
+            vec_client = env_transform.interface.vec_client
+            # try selfPlayClients first
+            if hasattr(vec_client, 'selfPlayClients') and len(vec_client.selfPlayClients) > 0:
+                for c in vec_client.selfPlayClients:
+                    try:
+                        c.render(False)
+                    except Exception:
+                        pass
+            # try regular clients
+            if hasattr(vec_client, 'clients') and len(vec_client.clients) > 0:
+                for c in vec_client.clients:
+                    try:
+                        c.render(False)
+                    except Exception:
+                        pass
+            return
+    except Exception:
+        pass
+
+    # Fallback: call env_transform.render() which may render a single view
+    try:
+        env_transform.render()
+    except Exception:
+        pass
 
 
 # Video?
@@ -745,34 +782,37 @@ class Agent(nn.Module):
 
 
             # Handle non Selfplay Agents (current main Agent)
-            agent_type_len = len(agent_type)
-            env_view = SubEnvView(envs, list(range(agent_type_len, num_envs)))
-            main_actions, main_logproba, main_entropy, main_invalid_action_masks = \
-                    self.get_action(x[agent_type_len:], Sc[agent_type_len:], z[agent_type_len:], action_old[agent_type_len:] if action_old is not None else None, invalid_action_masks[agent_type_len:] if invalid_action_masks is not None else None, env_view)
-
-
-            # concatinate and resort to original order
+            if num_selfplay_envs < num_envs:
+                agent_type_len = len(agent_type)
+                env_view = SubEnvView(envs, list(range(agent_type_len, num_envs)))
+                main_actions, main_logproba, main_entropy, main_invalid_action_masks = \
+                        self.get_action(x[agent_type_len:], Sc[agent_type_len:], z[agent_type_len:], action_old[agent_type_len:] if action_old is not None else None, invalid_action_masks[agent_type_len:] if invalid_action_masks is not None else None, env_view)
+            
+            # resort original order
             split_env_Indices = torch.cat([split_env_Indices[i] for i in range(len(split_env_Indices))], dim=0)
             
             action = torch.empty_like(split_action)
             for i, idx in enumerate(split_env_Indices):
                 action[i] = split_action[idx]
-            action = torch.cat([action, main_actions], dim=0)
             
             logprob = torch.empty_like(split_logproba)
             for i, idx in enumerate(split_env_Indices):
                 logprob[i] = split_logproba[idx]
-            logprob = torch.cat([logprob, main_logproba], dim=0)
             
             entropy = torch.empty_like(split_entropy)
             for i, idx in enumerate(split_env_Indices):
                 entropy[i] = split_entropy[idx]
-            entropy = torch.cat([entropy, main_entropy], dim=0)
             
             invalid_action_masks = torch.empty_like(split_invalid_action_masks)
             for i, idx in enumerate(split_env_Indices):
                 invalid_action_masks[i] = split_invalid_action_masks[idx]
-            invalid_action_masks = torch.cat([invalid_action_masks, main_invalid_action_masks], dim=0)
+            
+            if num_selfplay_envs < num_envs:
+                # concatinate
+                action = torch.cat([action, main_actions], dim=0)
+                logprob = torch.cat([logprob, main_logproba], dim=0)
+                entropy = torch.cat([entropy, main_entropy], dim=0)
+                invalid_action_masks = torch.cat([invalid_action_masks, main_invalid_action_masks], dim=0)
 
             return action, logprob, entropy, invalid_action_masks
             
@@ -1042,9 +1082,13 @@ if BCtraining:
                 while not dones.all():
                     acti = []
 
-                    # new
+                    # TODO (render) new
                     if args.render:
-                        envT.render()
+                        if getattr(args, 'render_all', False):
+                            # render every underlying env (inefficient, debug only)
+                            render_all_envs(envT)
+                        else:
+                            envT.render()
 
                     obs_arr.append(obs_batch)  # initial observation speichern
 
@@ -1305,9 +1349,13 @@ for update in range(starting_update, num_updates + 1):
             with torch.no_grad():
                 zFeatures[step][i] = agent.z_encoder(obs[step][i].view(-1))
 
-        # new
+        
+        # TODO (render) new
         if args.render:
-            envsT.render("human")
+            if args.render_all:
+                render_all_envs(envsT)
+            else:
+                envsT.render("human")
 
         global_step += 1 * args.num_envs
 
@@ -1360,6 +1408,11 @@ for update in range(starting_update, num_updates + 1):
             java_valid_actions += [JArray(JArray(JInt))(java_valid_action)]
         java_valid_actions = JArray(JArray(JArray(JInt)))(java_valid_actions)
         # java_valid_actions.shape: (Envs, num_valid_actions_in_Env, valid_action (8)) (py_arr = np.array(java_valid_actions))
+        # np_valid_actions = np.array(
+        # [[np.array(list(inner), dtype=np.int32) for inner in outer]
+        #  for outer in java_valid_actions],
+        # dtype=object
+        # )
         # =============
 
         # =============
@@ -1537,9 +1590,14 @@ for update in range(starting_update, num_updates + 1):
             approx_kl = (b_logprobs[minibatch_ind] - newlogproba).mean()
 
             # Policy loss L^CLIP(θ) = E ̂_t ["min" (r_t (θ)*Â_t,"clip" (r_t (θ),1-ϵ,1+ϵ)*Â_t )]
-            # --clip_coef
+            # --clip-coef
             # pg_loss = -L^CLIP(θ) (opposite)
             # it is the same (but negative), because in loss1 and 2 there is a minus sign and advantages are calculated differently
+            # geht gegen 0, wenn es keine Verbesserung mehr gibt
+            # gibt ein Wert für die Verbesserung der Policy in der aktuellen Iteration an
+            # < 0  ⇒ Surrogate im Mittel verbessert (guter Update) (Policy verbessert sich)
+            # ≈ 0  ⇒ kaum/keine (geclippte) Verbesserung
+            # > 0  ⇒ Surrogate im Mittel schlechter (schlechter Update)
             pg_loss1 = -mb_advantages * ratio
             pg_loss2 = -mb_advantages * \
                 torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
