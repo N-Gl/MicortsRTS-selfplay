@@ -1,0 +1,49 @@
+2025-10-09 13:29:56,155 INFO    MainThread:195062 [internal.py:wandb_internal():88] W&B internal server running at pid: 195062, started at: 2025-10-09 13:29:56.155028
+2025-10-09 13:29:56,160 INFO    WriterThread:195062 [datastore.py:open_for_write():77] open: /home/cookiekiller100/Uni/BA/new/MicroRTS/wandb/run-20251009_132955-6z3x58l3/run-6z3x58l3.wandb
+2025-10-09 13:29:56,161 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: check_version
+2025-10-09 13:29:56,161 DEBUG   SenderThread:195062 [sender.py:send():160] send: header
+2025-10-09 13:29:56,162 DEBUG   SenderThread:195062 [sender.py:send():160] send: request
+2025-10-09 13:29:56,162 DEBUG   SenderThread:195062 [sender.py:send_request():169] send_request: check_version
+2025-10-09 13:29:56,381 DEBUG   SenderThread:195062 [sender.py:send():160] send: run
+2025-10-09 13:29:56,386 INFO    SenderThread:195062 [sender.py:_maybe_setup_resume():350] checking resume status for None/BC/6z3x58l3
+2025-10-09 13:29:57,204 INFO    SenderThread:195062 [sender.py:_start_run_threads():651] run started: 6z3x58l3 with start time 1760009395
+2025-10-09 13:29:57,206 DEBUG   SenderThread:195062 [sender.py:send():160] send: summary
+2025-10-09 13:29:57,207 INFO    SenderThread:195062 [sender.py:_save_file():781] saving file wandb-summary.json with policy end
+2025-10-09 13:29:57,208 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: run_start
+2025-10-09 13:29:57,258 DEBUG   HandlerThread:195062 [meta.py:__init__():34] meta init
+2025-10-09 13:29:57,258 DEBUG   HandlerThread:195062 [meta.py:__init__():48] meta init done
+2025-10-09 13:29:57,258 DEBUG   HandlerThread:195062 [meta.py:probe():190] probe
+2025-10-09 13:29:57,267 DEBUG   HandlerThread:195062 [meta.py:_setup_git():180] setup git
+2025-10-09 13:29:57,288 DEBUG   HandlerThread:195062 [meta.py:_setup_git():187] setup git done
+2025-10-09 13:29:57,288 DEBUG   HandlerThread:195062 [meta.py:_save_pip():52] save pip
+2025-10-09 13:29:57,289 DEBUG   HandlerThread:195062 [meta.py:_save_pip():66] save pip done
+2025-10-09 13:29:57,289 DEBUG   HandlerThread:195062 [meta.py:probe():231] probe done
+2025-10-09 13:29:57,334 DEBUG   SenderThread:195062 [sender.py:send():160] send: files
+2025-10-09 13:29:57,335 INFO    SenderThread:195062 [sender.py:_save_file():781] saving file wandb-metadata.json with policy now
+2025-10-09 13:29:57,341 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: status
+2025-10-09 13:29:57,342 DEBUG   SenderThread:195062 [sender.py:send():160] send: request
+2025-10-09 13:29:57,343 DEBUG   SenderThread:195062 [sender.py:send_request():169] send_request: status
+2025-10-09 13:29:57,348 INFO    HandlerThread:195062 [handler.py:handle_tbrecord():533] handling tbrecord: tbrecord {
+  log_dir: "/tmp/MicrortsBC__running_BC__1__1760009394"
+}
+
+2025-10-09 13:29:57,348 DEBUG   HandlerThread:195062 [config_util.py:dict_from_config_file():101] no default config file found in config-defaults.yaml
+2025-10-09 13:29:57,656 DEBUG   SenderThread:195062 [sender.py:send():160] send: tbrecord
+2025-10-09 13:30:12,796 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: status
+2025-10-09 13:30:12,797 DEBUG   SenderThread:195062 [sender.py:send():160] send: request
+2025-10-09 13:30:12,797 DEBUG   SenderThread:195062 [sender.py:send_request():169] send_request: status
+2025-10-09 13:30:25,536 DEBUG   SenderThread:195062 [sender.py:send():160] send: stats
+2025-10-09 13:30:28,148 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: status
+2025-10-09 13:30:28,148 DEBUG   SenderThread:195062 [sender.py:send():160] send: request
+2025-10-09 13:30:28,149 DEBUG   SenderThread:195062 [sender.py:send_request():169] send_request: status
+2025-10-09 13:30:43,412 DEBUG   HandlerThread:195062 [handler.py:handle_request():120] handle_request: status
+2025-10-09 13:30:43,412 DEBUG   SenderThread:195062 [sender.py:send():160] send: request
+2025-10-09 13:30:43,413 DEBUG   SenderThread:195062 [sender.py:send_request():169] send_request: status
+2025-10-09 13:30:54,317 WARNING MainThread:195062 [internal.py:wandb_internal():146] Internal process interrupt: 1
+2025-10-09 13:30:55,930 DEBUG   SenderThread:195062 [sender.py:send():160] send: stats
+2025-10-09 13:30:56,688 WARNING MainThread:195062 [internal.py:wandb_internal():146] Internal process interrupt: 2
+2025-10-09 13:30:56,688 ERROR   MainThread:195062 [internal.py:wandb_internal():149] Internal process interrupted.
+2025-10-09 13:30:56,930 INFO    WriterThread:195062 [datastore.py:close():258] close: /home/cookiekiller100/Uni/BA/new/MicroRTS/wandb/run-20251009_132955-6z3x58l3/run-6z3x58l3.wandb
+2025-10-09 13:30:56,931 INFO    SenderThread:195062 [sender.py:finish():884] shutting down sender
+2025-10-09 13:30:56,931 INFO    HandlerThread:195062 [handler.py:finish():624] shutting down handler
+2025-10-09 13:31:03,375 INFO    MainThread:195062 [internal.py:handle_exit():78] Internal process exited

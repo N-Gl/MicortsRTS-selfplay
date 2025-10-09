@@ -1,0 +1,24 @@
+2025-10-09 13:29:55,416 INFO    MainThread:194982 [wandb_setup.py:_flush():69] setting env: {}
+2025-10-09 13:29:55,416 INFO    MainThread:194982 [wandb_setup.py:_flush():69] setting login settings: {}
+2025-10-09 13:29:55,417 INFO    MainThread:194982 [wandb_init.py:_log_setup():336] Logging user logs to /home/cookiekiller100/Uni/BA/new/MicroRTS/wandb/run-20251009_132955-6z3x58l3/logs/debug.log
+2025-10-09 13:29:55,417 INFO    MainThread:194982 [wandb_init.py:_log_setup():337] Logging internal logs to /home/cookiekiller100/Uni/BA/new/MicroRTS/wandb/run-20251009_132955-6z3x58l3/logs/debug-internal.log
+2025-10-09 13:29:55,418 INFO    MainThread:194982 [wandb_init.py:init():369] calling init triggers
+2025-10-09 13:29:55,419 INFO    MainThread:194982 [wandb_init.py:init():374] wandb.init called with sweep_config: {}
+config: {'exp_name': 'running_BC', 'gym_id': 'MicrortsBC', 'learning_rate': 2.5e-05, 'seed': 1, 'total_timesteps': 31000000, 'torch_deterministic': True, 'cuda': True, 'prod_mode': True, 'capture_video': False, 'wandb_project_name': 'BC', 'wandb_entity': None, 'n_minibatch': 4, 'num_bot_envs': 24, 'num_selfplay_envs': 0, 'num_steps': 512, 'gamma': 1, 'gae_lambda': 0.95, 'ent_coef': 0.005, 'vf_coef': 0.01, 'max_grad_norm': 0.5, 'clip_coef': 0.1, 'update_epochs': 4, 'kle_stop': False, 'kle_rollback': False, 'target_kl': 0.03, 'kl_coeff': 0.4, 'norm_adv': True, 'anneal_lr': True, 'clip_vloss': True, 'BCtraining': False, 'newdata': True, 'nurwins': False, 'render': False, 'num_envs': 24, 'batch_size': 12288, 'minibatch_size': 3072}
+2025-10-09 13:29:55,419 INFO    MainThread:194982 [wandb_init.py:init():418] starting backend
+2025-10-09 13:29:55,420 INFO    MainThread:194982 [backend.py:_multiprocessing_setup():69] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2025-10-09 13:29:55,440 INFO    MainThread:194982 [backend.py:ensure_launched():123] starting backend process...
+2025-10-09 13:29:55,458 INFO    MainThread:194982 [backend.py:ensure_launched():127] started backend process with pid: 195062
+2025-10-09 13:29:55,462 INFO    MainThread:194982 [wandb_init.py:init():423] backend started and connected
+2025-10-09 13:29:55,469 INFO    MainThread:194982 [wandb_init.py:init():463] updated telemetry
+2025-10-09 13:29:55,470 INFO    MainThread:194982 [wandb_init.py:init():482] communicating current version
+2025-10-09 13:29:56,380 INFO    MainThread:194982 [wandb_init.py:init():487] got version response upgrade_message: "wandb version 0.22.2 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2025-10-09 13:29:56,380 INFO    MainThread:194982 [wandb_init.py:init():495] communicating run to backend with 30 second timeout
+2025-10-09 13:29:57,207 INFO    MainThread:194982 [wandb_init.py:init():520] starting run threads in backend
+2025-10-09 13:29:57,340 INFO    MainThread:194982 [wandb_run.py:_console_start():1524] atexit reg
+2025-10-09 13:29:57,341 INFO    MainThread:194982 [wandb_run.py:_redirect():1371] redirect: SettingsConsole.REDIRECT
+2025-10-09 13:29:57,341 INFO    MainThread:194982 [wandb_run.py:_redirect():1376] Redirecting console.
+2025-10-09 13:29:57,344 INFO    MainThread:194982 [wandb_run.py:_redirect():1438] Redirects installed.
+2025-10-09 13:29:57,344 INFO    MainThread:194982 [wandb_init.py:init():544] run started, returning control to user process
+2025-10-09 13:29:57,347 INFO    MainThread:194982 [wandb_run.py:_tensorboard_callback():817] tensorboard callback: /tmp/MicrortsBC__running_BC__1__1760009394, False

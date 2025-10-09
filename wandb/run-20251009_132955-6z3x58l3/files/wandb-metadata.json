@@ -1,0 +1,30 @@
+{
+    "os": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "python": "3.9.23",
+    "heartbeatAt": "2025-10-09T11:29:57.258827",
+    "startedAt": "2025-10-09T11:29:55.409231",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "gpu_count": 1,
+    "cpu_count": 16,
+    "cuda": null,
+    "args": [
+        "--BCtraining",
+        "False",
+        "--prod-mode",
+        "--wandb-project-name",
+        "BC"
+    ],
+    "state": "running",
+    "program": "/home/cookiekiller100/Uni/BA/new/MicroRTS/running_BC.py",
+    "codePath": "running_BC.py",
+    "git": {
+        "remote": "https://github.com/N-Gl/MicortsRTS-selfplay.git",
+        "commit": "ae388c89be45a74c23085e7458a0f67316fbba5d"
+    },
+    "email": null,
+    "root": "/home/cookiekiller100/Uni/BA/new/MicroRTS",
+    "host": "Cookiekiller100",
+    "username": "cookiekiller100",
+    "executable": "/home/cookiekiller100/Uni/BA/new/MicroRTS/venv/bin/python"
+}

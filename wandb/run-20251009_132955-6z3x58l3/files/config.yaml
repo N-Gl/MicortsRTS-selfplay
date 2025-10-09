@@ -1,0 +1,125 @@
+wandb_version: 1
+
+BCtraining:
+  desc: null
+  value: false
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.24
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.9.23
+    t:
+      1:
+      - 1
+      4: 3.9.23
+      5: 0.10.24
+      8:
+      - 5
+anneal_lr:
+  desc: null
+  value: true
+batch_size:
+  desc: null
+  value: 12288
+capture_video:
+  desc: null
+  value: false
+clip_coef:
+  desc: null
+  value: 0.1
+clip_vloss:
+  desc: null
+  value: true
+cuda:
+  desc: null
+  value: true
+ent_coef:
+  desc: null
+  value: 0.005
+exp_name:
+  desc: null
+  value: running_BC
+gae_lambda:
+  desc: null
+  value: 0.95
+gamma:
+  desc: null
+  value: 1
+gym_id:
+  desc: null
+  value: MicrortsBC
+kl_coeff:
+  desc: null
+  value: 0.4
+kle_rollback:
+  desc: null
+  value: false
+kle_stop:
+  desc: null
+  value: false
+learning_rate:
+  desc: null
+  value: 2.5e-05
+max_grad_norm:
+  desc: null
+  value: 0.5
+minibatch_size:
+  desc: null
+  value: 3072
+n_minibatch:
+  desc: null
+  value: 4
+newdata:
+  desc: null
+  value: true
+norm_adv:
+  desc: null
+  value: true
+num_bot_envs:
+  desc: null
+  value: 24
+num_envs:
+  desc: null
+  value: 24
+num_selfplay_envs:
+  desc: null
+  value: 0
+num_steps:
+  desc: null
+  value: 512
+nurwins:
+  desc: null
+  value: false
+prod_mode:
+  desc: null
+  value: true
+render:
+  desc: null
+  value: false
+seed:
+  desc: null
+  value: 1
+target_kl:
+  desc: null
+  value: 0.03
+torch_deterministic:
+  desc: null
+  value: true
+total_timesteps:
+  desc: null
+  value: 31000000
+update_epochs:
+  desc: null
+  value: 4
+vf_coef:
+  desc: null
+  value: 0.01
+wandb_entity:
+  desc: null
+  value: null
+wandb_project_name:
+  desc: null
+  value: BC

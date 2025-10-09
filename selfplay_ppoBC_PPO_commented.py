@@ -119,7 +119,8 @@ if __name__ == "__main__":
                         help='If toggled, render ALL underlying environments (inefficient, for debugging)')
     parser.add_argument('--dbg', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
                         help='If toggled, run the script in debug mode (JPype in debug mode, wait for debugger to attach to port 5005)')
-    
+    parser.add_argument('--resume', type=lambda x:bool(strtobool(x)), default=True, nargs='?', const=True,
+                        help='If toggled, resume training from the latest checkpoint')
 
     args = parser.parse_args()
     if not args.seed:
@@ -924,9 +925,6 @@ class ReplayDataset(IterableDataset):
 agent = Agent().to(device)
 
 
-# new
-path_BCagent = f"models/BCagent.pt"
-supervised_agent = Agent().to(device)
 # =========================
 
 
@@ -938,7 +936,8 @@ if args.prod_mode and wandb.run.resumed:
     else:
         start_epoch = 1
 
-    ckpt_path = f"models/{experiment_name}/agent.pt"
+if args.resume:
+    ckpt_path = f"models/agent.pt"
     if not os.path.exists(ckpt_path):
         raise FileNotFoundError(f"No checkpoint found at {ckpt_path}")
     agent.load_state_dict(
@@ -950,8 +949,8 @@ if args.prod_mode and wandb.run.resumed:
     print(f"resumed at epoch {start_epoch}")
 
     # new (moved out of if-Statement)
-    # path_BCagent = f"models/BCagent.pt"
-    # supervised_agent = Agent().to(device)
+    path_BCagent = f"models/agent.pt"
+    supervised_agent = Agent().to(device)
     supervised_agent.load_state_dict(
         torch.load(
             path_BCagent,
