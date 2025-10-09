@@ -1,1 +1,5 @@
 /venv/
+/runs/
+/models/
+/videos/
+/trained_models/
