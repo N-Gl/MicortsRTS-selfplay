@@ -330,6 +330,7 @@ envs = MicroRTSGridModeVecEnv(
     num_selfplay_envs=args.num_selfplay_envs,
     num_bot_envs=args.num_bot_envs,
     max_steps=2000,
+    always_player_1=False,
     render_theme=1,
     ai2s=opponents,
     map_paths=["maps/16x16/basesWorkers16x16.xml"],
@@ -1376,9 +1377,17 @@ for update in range(starting_update, num_updates + 1):
         # print("Grid-Position:", [real_action[0][i][0].item() for i in
         # range(10)]) # -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-        real_action = real_action.cpu().numpy()
-        # TODO (selfplay): in actions Spieler 1 zu Spieler 0 ändern
+        # Anpassungen für Spieler 1 (nach Spieler 1 -> Spieler 0)
+        if args.num_selfplay_envs > 1:
+            # Position anpassen
+            real_action[1:args.num_selfplay_envs:2, :, 0] = torch.tensor(range(255, -1, -1)).to(device)
+            # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
+            real_action[1:args.num_selfplay_envs:2, :, 2:6] = (real_action[1:args.num_selfplay_envs:2, :, 2:6] + 2) % 4
+            # relative attack position anpassen
+            real_action[1:args.num_selfplay_envs:2, :, 7] = torch.abs(real_action[1:args.num_selfplay_envs:2, :, 7] - 255)
 
+        real_action = real_action.cpu().numpy()
+    
         # =============
         # invalid_action_masks angewandt
         # =============
@@ -1389,7 +1398,6 @@ for update in range(starting_update, num_updates + 1):
         #                            np.array([238.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         #                            np.array([34.0, 0.0, 2.0, 0.0, 0.0, 2.0, 3.0, 24.0])])
         # valid_actions_counts = [1, 1, 1]
-
         valid_actions = real_action[invalid_action_masks[step]
                                     [:, :, 0].bool().cpu().numpy()]
         valid_actions_counts = invalid_action_masks[step][:, :, 0].sum(
