@@ -63,6 +63,8 @@ if __name__ == "__main__":
                         help="the path to the agent's model")
     parser.add_argument('--max-steps', type=int, default=4000,
                         help="the maximum number of game steps in microrts")
+    parser.add_argument('--render', type=bool, default=True,
+                        help="render the game envs")
 
     args = parser.parse_args()
     if not args.seed:
@@ -1359,7 +1361,8 @@ for i in range(len(ais)):
 
                 with torch.no_grad():
                     zFeatures[j] = agent.z_encoder(next_obs.view(next_obs.size(0), -1))
-            envsT.render()
+            if args.render:
+                envsT.render()
             global_step += args.num_envs
             ScFeatures = getScalarFeatures(next_obs, res, args.num_envs)
 

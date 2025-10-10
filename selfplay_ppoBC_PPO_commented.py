@@ -1405,14 +1405,14 @@ for update in range(starting_update, num_updates + 1):
             1).long().cpu().numpy()
         '''
         valid_actions:
-        [[Pos, Type, move direction, harvest direction, return direction, produce direction, produce type, relative attack position],
+        [[Pos, Type, move direction, harvest direction, return (recource) direction, produce direction, produce type, relative attack position],
          [Spiel0 (Spieler1)],
          [Spiel1 (Spieler0)]]
 
         Pos: 0-255 (16*16) links oben nach rechts unten (obenecke = 0)
-        Type: 0: NOP, 1: Move, 2: Harvest, 3: Return, 4: Produce, 5: Attack (wenn z.B.: move direction = 1, aber Type = 2 --> move direction wird ignoriert)
+        Type: 0: NOP, 1: Move, 2: Harvest, 3: Return, 4: Produce (Produce direction + Produce type), 5: Attack (wenn z.B.: move direction = 1, aber Type = 2 --> move direction wird ignoriert)
         direction: 0: North, 1: East, 2: South, 3: West
-        produce type: 0: Worker, 1: Light, 2: Ranged, 3: Heavy
+        produce type: 0: Heavy, 1: Ranged, 2: Light, 3: Worker
         relative attack position: 0-255 (16*16) links oben nach rechts unten (obenecke = 0) wo angegriffen wird
         '''
 
