@@ -6,6 +6,28 @@ import numpy as np
 
 
 
+next_obs = torch.rand(6, 2, 2, 3)
+
+num_selfplay_envs = 4
+
+# next_obs = torch.rand(2, 2, 2, 3)
+# 
+# num_selfplay_envs = 2
+if num_selfplay_envs > 1:
+    if 2 < num_selfplay_envs:
+        tmp = next_obs[1:num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+        next_obs[1:num_selfplay_envs:2] = tmp
+    else:
+        tmp = next_obs[1].flip(0, 1).contiguous().clone()
+        next_obs[1] = tmp
+
+
+print(next_obs.shape)
+
+
+
+
+
 # zFeatures = torch.rand(3, 2, 4)
 # 
 # b_z = zFeatures.reshape(-1, 8)
@@ -16,7 +38,7 @@ import numpy as np
 
 
 
-x = ("halloha", 2)
+# x = ("halloha", 2)
 # print(x[0][3:len(x[0])-2])
 
 
@@ -192,16 +214,18 @@ x = ("halloha", 2)
 
 
 
-indices_by_type = {
-    0: [0, 3],
-    1: [1, 4],
-    2: [2]
-}
+# indices_by_type = {
+#     0: [0, 3],
+#     1: [1, 4],
+#     2: [2]
+# }
+# 
+# x = torch.rand(8, 10, 3)
+# 
+# split_x = {t: [x[i] for i in idx] for t, idx in indices_by_type.items()}
+# 
+# print(x[0] is split_x[0])
+# print(x[0] is split_x[0][0])
+# print(x[0] is split_x[0][0][0])
 
-x = torch.rand(8, 10, 3)
 
-split_x = {t: [x[i] for i in idx] for t, idx in indices_by_type.items()}
-
-print(x[0] is split_x[0])
-print(x[0] is split_x[0][0])
-print(x[0] is split_x[0][0][0])

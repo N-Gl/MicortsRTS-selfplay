@@ -683,7 +683,7 @@ class Agent(nn.Module):
         self.critic = layer_init(nn.Linear(256 + 32 + 8, 1), std=1)
 
     def forward(self, x, sc, z):
-
+        # in sc wurde Spieler 1 zu Spieler 0, für jedes 2te selfplay env (da der Agent immer aus Sicht von Spieler 0 handelt)
         # ScalarEncoder
         sc_feat = self.scalar_encoder(sc)
 
@@ -1267,6 +1267,15 @@ start_time = time.time()
 ob, mas, res = envsT.reset()
 
 next_obs = torch.Tensor(ob).to(device)
+# transponiere jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
+if args.num_selfplay_envs > 1:
+    if 2 < args.num_selfplay_envs:
+        tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+        next_obs[1:args.num_selfplay_envs:2] = tmp
+    else:
+        tmp = next_obs[1].flip(0, 1).contiguous().clone()
+    next_obs[1] = tmp
+
 next_done = torch.zeros(args.num_envs).to(device)
 num_updates = args.total_timesteps // args.batch_size
 ScFeatures = torch.zeros((args.num_steps, args.num_envs, 11)).to(device)
@@ -1283,18 +1292,10 @@ starting_update = 1
 
 
 
-
-
-
-
-
-
-
-
-
 # =========================
 # selfplay setup
 # =========================
+# TODO (selfplay): entfernen?
 from selfplay2 import Selfplay
 selfplay = Selfplay(num_selfplay_envs=args.num_selfplay_envs, main_agent=agent)
 
@@ -1302,18 +1303,6 @@ selfplay = Selfplay(num_selfplay_envs=args.num_selfplay_envs, main_agent=agent)
 #     with torch.no_grad():
 #         sp.selfplay_step()
 # =========================
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1346,6 +1335,7 @@ for update in range(starting_update, num_updates + 1):
 
         for i in range(args.num_envs):
             with torch.no_grad():
+                # obs sind zuerst alles 0en, dannach jeweils Spieler 1 zu Spieler 0 geändert
                 zFeatures[step][i] = agent.z_encoder(obs[step][i].view(-1))
 
         
@@ -1364,12 +1354,12 @@ for update in range(starting_update, num_updates + 1):
         dones[step] = next_done
 
         with torch.no_grad():
-
             values[step] = agent.get_value(obs[step], ScFeatures[step], zFeatures[step]).flatten()  # critic(forward(...))
             
 
             # gesamplete action (aus Verteilung der Logits) (24, 256, 7),
             # actor(forward(...)), invalid_action_masks
+            # obs sind zuerst alles 0en, dannach jeweils Spieler 1 zu Spieler 0 geändert
             action, logproba, _, invalid_action_masks[step] = agent.selfplay_get_action(
                 obs[step], ScFeatures[step], zFeatures[step], args.num_selfplay_envs, args.num_envs, agent_type=agent_type, envs=envsT)
 
@@ -1387,6 +1377,7 @@ for update in range(starting_update, num_updates + 1):
         # range(10)]) # -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
         real_action = real_action.cpu().numpy()
+        # TODO (selfplay): in actions Spieler 1 zu Spieler 0 ändern
 
         # =============
         # invalid_action_masks angewandt
@@ -1412,7 +1403,7 @@ for update in range(starting_update, num_updates + 1):
         Pos: 0-255 (16*16) links oben nach rechts unten (obenecke = 0)
         Type: 0: NOP, 1: Move, 2: Harvest, 3: Return, 4: Produce (Produce direction + Produce type), 5: Attack (wenn z.B.: move direction = 1, aber Type = 2 --> move direction wird ignoriert)
         direction: 0: North, 1: East, 2: South, 3: West
-        produce type: 0: Heavy, 1: Ranged, 2: Light, 3: Worker
+        produce type: 0: (light), 1: (Ranged), 2: (Baracks / Heavy), 3: (Worker) (je nach Unit unterschiedlich)
         relative attack position: 0-255 (16*16) links oben nach rechts unten (obenecke = 0) wo angegriffen wird
         '''
 
@@ -1444,6 +1435,15 @@ for update in range(starting_update, num_updates + 1):
                 java_valid_actions)
             next_obs = envsT._from_microrts_obs(next_obs) # next_obs zu Tensor mit shape (24, 16, 16, 73) (von (24, X))
             next_obs = torch.Tensor(next_obs).to(device)
+
+            # transponiere jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
+            if args.num_selfplay_envs > 1:
+                if 2 < args.num_selfplay_envs:
+                    tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+                    next_obs[1:args.num_selfplay_envs:2] = tmp
+                else:
+                    tmp = next_obs[1].flip(0, 1).contiguous().clone()
+                next_obs[1] = tmp
 
         except Exception as e:
             e.printStackTrace()

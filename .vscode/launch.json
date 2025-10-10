@@ -41,7 +41,7 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/selfplay_ppoBC_PPO_commented.py",
-      "args": ["--num-bot-envs","1","--num-selfplay-envs","2", "--BCtraining", "False", "--render", "--render_all"],
+      "args": ["--num-bot-envs","2","--num-selfplay-envs","2", "--BCtraining", "False", "--render", "--render_all"],
       "console": "integratedTerminal",
       "justMyCode": false
     },
