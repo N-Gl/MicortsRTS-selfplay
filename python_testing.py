@@ -6,7 +6,7 @@ import numpy as np
 
 
 
-next_obs = torch.rand(6, 2, 2, 3)
+next_obs = torch.rand(6, 2, 2, 5)
 
 num_selfplay_envs = 4
 
@@ -15,11 +15,9 @@ num_selfplay_envs = 4
 # num_selfplay_envs = 2
 if num_selfplay_envs > 1:
     if 2 < num_selfplay_envs:
-        tmp = next_obs[1:num_selfplay_envs:2].flip(1, 2).contiguous().clone()
-        next_obs[1:num_selfplay_envs:2] = tmp
+        next_obs[1:num_selfplay_envs:2, :, :, 1:4] = next_obs[1:num_selfplay_envs:2, :, :, 4:1]
     else:
-        tmp = next_obs[1].flip(0, 1).contiguous().clone()
-        next_obs[1] = tmp
+        next_obs[1:num_selfplay_envs:2, :, :, 1:4] = next_obs[1:num_selfplay_envs:2, :, :, 4:1]
 
 
 print(next_obs.shape)

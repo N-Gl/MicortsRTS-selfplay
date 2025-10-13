@@ -1258,11 +1258,11 @@ elif args.exp_name == "ppo_gridnet_coacai_no_mask":
 else:
     raise Exception("incorrect agent selected")
 all_ais = {
+    "coacAI": microrts_ai.coacAI,
+    "mayari": microrts_ai.mayari,
     "lightRushAI": microrts_ai.lightRushAI,
     "randomBiasedAI": microrts_ai.randomBiasedAI,
     "workerRushAI": microrts_ai.workerRushAI,
-    "coacAI": microrts_ai.coacAI,
-    "mayari": microrts_ai.mayari,
     "randomAI": microrts_ai.randomAI,
     "passiveAI": microrts_ai.passiveAI,
     #"mixedBot": microrts_ai.mixedBot,

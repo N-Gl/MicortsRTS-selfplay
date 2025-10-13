@@ -1377,14 +1377,14 @@ for update in range(starting_update, num_updates + 1):
         # print("Grid-Position:", [real_action[0][i][0].item() for i in
         # range(10)]) # -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-        # Anpassungen für Spieler 1 (nach Spieler 1 -> Spieler 0)
+        # Anpassungen für Spieler 1 nach (Spieler 1 -> Spieler 0)
         if args.num_selfplay_envs > 1:
             # Position anpassen
             real_action[1:args.num_selfplay_envs:2, :, 0] = torch.tensor(range(255, -1, -1)).to(device)
             # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
             real_action[1:args.num_selfplay_envs:2, :, 2:6] = (real_action[1:args.num_selfplay_envs:2, :, 2:6] + 2) % 4
-            # relative attack position anpassen
-            real_action[1:args.num_selfplay_envs:2, :, 7] = torch.abs(real_action[1:args.num_selfplay_envs:2, :, 7] - 255)
+            # relative attack position anpassen (nur für a_r = 7)
+            real_action[1:args.num_selfplay_envs:2, :, 7] = torch.abs(real_action[1:args.num_selfplay_envs:2, :, 7] - 48)
 
         real_action = real_action.cpu().numpy()
     
@@ -1444,9 +1444,13 @@ for update in range(starting_update, num_updates + 1):
             next_obs = envsT._from_microrts_obs(next_obs) # next_obs zu Tensor mit shape (24, 16, 16, 73) (von (24, X))
             next_obs = torch.Tensor(next_obs).to(device)
 
-            # transponiere jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
+            
             if args.num_selfplay_envs > 1:
+                # jede zweite selfplay Umgebung:
                 if 2 < args.num_selfplay_envs:
+                    # wechsle die Spieler in der Observation (Spieler 1 -> Spieler 0)
+                    next_obs[1:args.num_selfplay_envs:2, :, :, 4:6] = next_obs[1:args.num_selfplay_envs:2, :, :, 6:4]
+                    # flip Observations (Spieler 1 -> Spieler 0)
                     tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
                     next_obs[1:args.num_selfplay_envs:2] = tmp
                 else:
