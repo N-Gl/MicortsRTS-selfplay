@@ -745,7 +745,7 @@ class Agent(nn.Module):
 
         return bc_loss + 0.01 * kl_loss
     
-    def selfplay_get_action(self, x, Sc, z, num_selfplay_envs, num_envs, action_old=None, agent_type=None, invalid_action_masks=None, envs=None):
+    def selfplay_get_action(self, x, sc, z, num_selfplay_envs, num_envs, action_old=None, agent_type=None, invalid_action_masks=None, envs=None):
         '''
         returns action, logprob, entropy, invalid_action_masks for selfplay and bot envs combined.
         Also returns action, logprob, entropy, invalid_action_masks for not main Agents
@@ -760,7 +760,7 @@ class Agent(nn.Module):
             # TODO (selfplay): alle Daten werden hier kopiert aber ich verändere diese nicht -> versuche eine View jeweils daraus zu machen, benutze
             # z.B.: split_x = {t: [x[i] for i in idx] for t, idx in indices_by_type.items()} (array of Pointers)
             split_x = {t: x[idx] for t, idx in indices_by_type.items()}
-            split_Sc = {t: Sc[idx] for t, idx in indices_by_type.items()}
+            split_Sc = {t: sc[idx] for t, idx in indices_by_type.items()}
             split_z = {t: z[idx] for t, idx in indices_by_type.items()}
             split_action_old = {t: action_old[idx] for t, idx in indices_by_type.items()} \
                 if action_old is not None else [None] * len(agent_type)
@@ -788,7 +788,7 @@ class Agent(nn.Module):
                 agent_type_len = len(agent_type)
                 env_view = SubEnvView(envs, list(range(agent_type_len, num_envs)))
                 main_actions, main_logproba, main_entropy, main_invalid_action_masks = \
-                        self.get_action(x[agent_type_len:], Sc[agent_type_len:], z[agent_type_len:], action_old[agent_type_len:] if action_old is not None else None, invalid_action_masks[agent_type_len:] if invalid_action_masks is not None else None, env_view)
+                        self.get_action(x[agent_type_len:], sc[agent_type_len:], z[agent_type_len:], action_old[agent_type_len:] if action_old is not None else None, invalid_action_masks[agent_type_len:] if invalid_action_masks is not None else None, env_view)
             
             # resort original order
             split_env_Indices = torch.cat([split_env_Indices[i] for i in range(len(split_env_Indices))], dim=0)
@@ -819,13 +819,13 @@ class Agent(nn.Module):
             return action, logprob, entropy, invalid_action_masks
             
         else:
-            return self.get_action(x, Sc, z, action_old, invalid_action_masks, envs)
+            return self.get_action(x, sc, z, action_old, invalid_action_masks, envs)
 
 
 
-    # new envs statt envsT benutzen
-    def get_action(self, x, Sc, z, action=None, invalid_action_masks=None, envs=None):
-        logits = self.actor(self.forward(x, Sc, z))
+    # new envs statt envsT benutzen (man darf daran nichts verändern, da nicht alle envsT selfplay envs sind)
+    def get_action(self, x, sc, z, action=None, invalid_action_masks=None, envs=None):
+        logits = self.actor(self.forward(x, sc, z))
         # print("logits size:", logits.size())
 
         grid_logits = logits.view(-1, envs.action_plane_space.nvec.sum())
@@ -885,8 +885,8 @@ class Agent(nn.Module):
         return action, logprob.sum(1).sum(1), entropy.sum(
             1).sum(1), invalid_action_masks
 
-    def get_value(self, x, Sc, z):
-        return self.critic(self.forward(x, Sc, z))
+    def get_value(self, x, sc, z):
+        return self.critic(self.forward(x, sc, z))
 
 
 class ReplayDataset(IterableDataset):
@@ -1268,6 +1268,11 @@ start_time = time.time()
 ob, mas, res = envsT.reset()
 
 next_obs = torch.Tensor(ob).to(device)
+
+ScFeatures = torch.zeros((args.num_steps, args.num_envs, 11)).to(device)
+ScFeatures[0] = getScalarFeatures(next_obs, res, args.num_envs)
+
+
 # transponiere jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
 if args.num_selfplay_envs > 1:
     if 2 < args.num_selfplay_envs:
@@ -1279,7 +1284,7 @@ if args.num_selfplay_envs > 1:
 
 next_done = torch.zeros(args.num_envs).to(device)
 num_updates = args.total_timesteps // args.batch_size
-ScFeatures = torch.zeros((args.num_steps, args.num_envs, 11)).to(device)
+
 zFeatures = torch.zeros(
     (args.num_steps,
      args.num_envs,
@@ -1351,7 +1356,6 @@ for update in range(starting_update, num_updates + 1):
 
         obs[step] = next_obs
 
-        ScFeatures[step] = getScalarFeatures(next_obs, res, args.num_envs)
         dones[step] = next_done
 
         with torch.no_grad():
@@ -1446,6 +1450,9 @@ for update in range(starting_update, num_updates + 1):
         except Exception as e:
             e.printStackTrace()
             raise
+
+
+        ScFeatures[step+1] = getScalarFeatures(next_obs, res, args.num_envs)
 
         if args.num_selfplay_envs > 1:
             # jede zweite selfplay Umgebung:
