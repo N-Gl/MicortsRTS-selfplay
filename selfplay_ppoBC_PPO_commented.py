@@ -1443,23 +1443,45 @@ for update in range(starting_update, num_updates + 1):
                 java_valid_actions)
             next_obs = envsT._from_microrts_obs(next_obs) # next_obs zu Tensor mit shape (24, 16, 16, 73) (von (24, X))
             next_obs = torch.Tensor(next_obs).to(device)
-
-            
-            if args.num_selfplay_envs > 1:
-                # jede zweite selfplay Umgebung:
-                if 2 < args.num_selfplay_envs:
-                    # wechsle die Spieler in der Observation (Spieler 1 -> Spieler 0)
-                    next_obs[1:args.num_selfplay_envs:2, :, :, 4:6] = next_obs[1:args.num_selfplay_envs:2, :, :, 6:4]
-                    # flip Observations (Spieler 1 -> Spieler 0)
-                    tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
-                    next_obs[1:args.num_selfplay_envs:2] = tmp
-                else:
-                    tmp = next_obs[1].flip(0, 1).contiguous().clone()
-                next_obs[1] = tmp
-
         except Exception as e:
             e.printStackTrace()
             raise
+
+        if args.num_selfplay_envs > 1:
+            # jede zweite selfplay Umgebung:
+            if 2 < args.num_selfplay_envs:
+                tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+
+                # flip Observations (Spieler 1 -> Spieler 0)
+                next_obs[1:args.num_selfplay_envs:2] = tmp
+
+                # switch players in the observation (player 1 -> player 0)
+                next_obs[1:args.num_selfplay_envs:2, :, :, 4:6:-1] = next_obs[1:args.num_selfplay_envs:2, :, :, 6:4]
+                next_obs[1:args.num_selfplay_envs:2, :, :, 59:66] = tmp[:, :, :, 66:73]
+                next_obs[1:args.num_selfplay_envs:2, :, :, 66:73] = tmp[:, :, :, 59:66]
+
+                # rottate directions 180°
+                next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] = (next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] + 2) % 4
+                next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] = (next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] + 2) % 4
+
+            else:
+                tmp = next_obs[1].flip(0, 1).contiguous().clone()
+                next_obs[1] = tmp
+
+                # switch players in the observation (player 1 -> player 0)
+                next_obs[1, :, :, 4] = tmp[:, :, 5]
+                next_obs[1, :, :, 5] = tmp[:, :, 4]
+                next_obs[1, :, :, 59:66] = tmp[:, :, 66:73]
+                next_obs[1, :, :, 66:73] = tmp[:, :, 59:66]
+
+                # rottate directions 180° TODO (optimize): auch alle Richtungen, die nicht benutzt werden, werden geändert
+                permutation = [21, 24, 25, 22, 23, 26, 29, 30, 27, 28, 31, 34, 35, 32, 33, 36, 39, 40, 37, 38]
+                for i, p in enumerate(permutation):
+                    next_obs[1, :, :, i+21] = tmp[:, :, p]
+    
+                permutation = [49, 52, 53, 50, 51]
+                for i, p in enumerate(permutation):
+                    next_obs[1, :, :, i+49] = tmp[:, :, p]
 
         '''winloss = min(0.01, 6.72222222e-9 * global_step)
         densereward = max(0, 0.8 + (-4.44444444e-9 * global_step))
