@@ -839,12 +839,38 @@ class Agent(nn.Module):
                 arr = np.array(envs.debug_matrix_mask(i))
                 all_arrays.append(arr)
             mask = np.stack(all_arrays)
+            
+            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env
+
+
             invalid_action_masks = torch.tensor(mask).to(device)
+
+            if args.num_selfplay_envs > 1:
+                if 2 < args.num_selfplay_envs:
+                    tmp = invalid_action_masks[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+                    invalid_action_masks[1:args.num_selfplay_envs:2] = tmp
+                else:
+                    tmp = invalid_action_masks[1].flip(0, 1).contiguous().clone()
+                    invalid_action_masks[1] = tmp
+
             invalid_action_masks = invalid_action_masks.view(
                 -1, invalid_action_masks.shape[-1])
             split_invalid_action_masks = torch.split(
                 invalid_action_masks[:, 1:], envs.action_plane_space.nvec.tolist(), dim=1
             )
+            # split_invalid_action_masks: shape (16*16* num_envs, 7, ...)
+            
+            if args.num_selfplay_envs > 1:
+                # TODO (optimieren): ineffizient
+                # da die Dimensionen hintereinander gepackt sind -> jede 256 Positionen (16*16) sind ein Grid
+                # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
+                for j in range(0, args.num_selfplay_envs, 2):
+                    for i in range(4):
+                        split_invalid_action_masks[i+1, 256*j:512*j] = torch.roll(split_invalid_action_masks[i+1, 256*j:512*j], shifts=2, dims=1)
+                        
+                    # relative attack position anpassen (nur für a_r = 7)
+                    split_invalid_action_masks[6, 256*j:512*j] = split_invalid_action_masks[6, 256*j:512*j].flip(1)
+            
             multi_categoricals = [
                 CategoricalMasked(logits=l, masks=m)
                 for (l, m) in zip(split_logits, split_invalid_action_masks)
@@ -1278,9 +1304,10 @@ if args.num_selfplay_envs > 1:
     if 2 < args.num_selfplay_envs:
         tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
         next_obs[1:args.num_selfplay_envs:2] = tmp
+        next_obs[1:args.num_selfplay_envs:2] = tmp
     else:
         tmp = next_obs[1].flip(0, 1).contiguous().clone()
-    next_obs[1] = tmp
+        next_obs[1] = tmp
 
 next_done = torch.zeros(args.num_envs).to(device)
 num_updates = args.total_timesteps // args.batch_size
@@ -1481,7 +1508,7 @@ for update in range(starting_update, num_updates + 1):
                 next_obs[1, :, :, 59:66] = tmp[:, :, 66:73]
                 next_obs[1, :, :, 66:73] = tmp[:, :, 59:66]
 
-                # rottate directions 180° TODO (optimize): auch alle Richtungen, die nicht benutzt werden, werden geändert
+                # rottate directions 180° TODO (selfplay): auch alle Richtungen, die nicht benutzt werden, werden geändert (benutze torch.roll(next_obs[...], shifts=2, dims=...))
                 permutation = [21, 24, 25, 22, 23, 26, 29, 30, 27, 28, 31, 34, 35, 32, 33, 36, 39, 40, 37, 38]
                 for i, p in enumerate(permutation):
                     next_obs[1, :, :, i+21] = tmp[:, :, p]
