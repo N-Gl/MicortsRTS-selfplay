@@ -353,7 +353,6 @@ envsT = MicroRTSSpaceTransform(envs)
 
 envsT = VecstatsMonitor(envsT, args.gamma)
 
-# TODO (render) new
 # Helper to render all underlying environments (inefficient, for debugging)
 def render_all_envs(env_transform):
     """Try to render every underlying env. This is intentionally
@@ -468,6 +467,8 @@ class SelfplayAgentType(IntEnum):
 # ], dtype=torch.long)
 # agent_type = None
 agent_type = torch.tensor([
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
     SelfplayAgentType.CUR_MAIN,
     SelfplayAgentType.CUR_MAIN,
 ], dtype=torch.long)
@@ -843,14 +844,14 @@ class Agent(nn.Module):
             
             invalid_action_masks = torch.tensor(mask).to(device)
 
-            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env
-            if args.num_selfplay_envs > 1:
-                if 2 < args.num_selfplay_envs:
-                    tmp = invalid_action_masks[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
-                    invalid_action_masks[1:args.num_selfplay_envs:2] = tmp
-                else:
-                    tmp = invalid_action_masks[1].flip(0, 1).contiguous().clone()
-                    invalid_action_masks[1] = tmp
+            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env (muss man nicht machen, da es schon in der debug_matrix_mask gemacht wird?) entfernen?
+            # if args.num_selfplay_envs > 1:
+            #     if 2 < args.num_selfplay_envs:
+            #         tmp = invalid_action_masks[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+            #         invalid_action_masks[1:args.num_selfplay_envs:2] = tmp
+            #     else:
+            #         tmp = invalid_action_masks[1].flip(0, 1).contiguous().clone()
+            #         invalid_action_masks[1] = tmp
 
             # es wird immer der erste Wert in der Maske entfernt, weil es immer eine Positionsangabe geben darf
             invalid_action_masks = invalid_action_masks.view(
@@ -860,16 +861,17 @@ class Agent(nn.Module):
             )
             # split_invalid_action_masks: shape (16*16* num_envs, 7, ...)
             
-            if args.num_selfplay_envs > 1:
-                # TODO (optimieren): ineffizient
+
+            # TODO (selfplay): muss man nicht machen, da es schon in der debug_matrix_mask gemacht wird? entfernen? und ineffizient
+            # if args.num_selfplay_envs > 1:
                 # da die Dimensionen hintereinander gepackt sind -> jede 256 Positionen (16*16) sind ein Grid
                 # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
-                for j in range(1, args.num_selfplay_envs, 2):
-                    for i in range(1, 5):
-                        split_invalid_action_masks[i][256*j:512*j] = torch.roll(split_invalid_action_masks[i][256*j:512*j], shifts=2, dims=1)
-                        
-                    # relative attack position anpassen (nur für a_r = 7)
-                    split_invalid_action_masks[6][256*j:512*j] = split_invalid_action_masks[6][256*j:512*j].flip(1)
+                # for j in range(1, args.num_selfplay_envs, 2):
+                #     for i in range(1, 5):
+                #         split_invalid_action_masks[i][256*j:512*j] = torch.roll(split_invalid_action_masks[i][256*j:512*j], shifts=2, dims=1)
+                #         
+                #     # relative attack position anpassen (nur für a_r = 7)
+                #     split_invalid_action_masks[6][256*j:512*j] = split_invalid_action_masks[6][256*j:512*j].flip(1)
             
             multi_categoricals = [
                 CategoricalMasked(logits=l, masks=m)
@@ -1108,7 +1110,6 @@ if BCtraining:
                 while not dones.all():
                     acti = []
 
-                    # TODO (render) new
                     if args.render:
                         if getattr(args, 'render_all', False):
                             # render every underlying env (inefficient, debug only)
@@ -1260,6 +1261,84 @@ if BCtraining:
 # =========================
 
 
+
+
+def adjust_obs_selfplay(args, next_obs, is_new_env=False):
+    if is_new_env:
+            # flippe jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
+            # da keine Unit eine Richtung bekommen hat müssen die Richtungen nicht angepasst werden
+        if args.num_selfplay_envs > 1:
+            if 2 < args.num_selfplay_envs:
+                tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+                next_obs[1:args.num_selfplay_envs:2] = tmp
+                next_obs[1:args.num_selfplay_envs:2] = tmp
+            else:
+                tmp = next_obs[1].flip(0, 1).contiguous().clone()
+                next_obs[1] = tmp
+            return
+
+    if args.num_selfplay_envs > 1:
+            # jede zweite selfplay Umgebung:
+        if 2 < args.num_selfplay_envs:
+            tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
+
+                # flip Observations (Spieler 1 -> Spieler 0)
+            next_obs[1:args.num_selfplay_envs:2] = tmp
+
+                # switch players in the observation (player 1 -> player 0) 
+            # next_obs[1:args.num_selfplay_envs:2, :, :, 4:6:-1] = next_obs[1:args.num_selfplay_envs:2, :, :, 6:4] muss man nicht machen (sind schon gedreht), wenn doch --> auch wenn is_new_env=True, im else-Teil
+            # next_obs[1:args.num_selfplay_envs:2, :, :, 59:66] = tmp[:, :, :, 66:73]
+            # next_obs[1:args.num_selfplay_envs:2, :, :, 66:73] = tmp[:, :, :, 59:66]
+
+                # rottate directions 180°
+            next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] = (next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] + 2) % 4
+            next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] = (next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] + 2) % 4
+
+        else:
+            tmp = next_obs[1].flip(0, 1).contiguous().clone()
+            next_obs[1] = tmp
+
+                # switch players in the observation (player 1 -> player 0)
+            # next_obs[1, :, :, 4] = tmp[:, :, 5]
+            # next_obs[1, :, :, 5] = tmp[:, :, 4]
+            # next_obs[1, :, :, 59:66] = tmp[:, :, 66:73]
+            # next_obs[1, :, :, 66:73] = tmp[:, :, 59:66]
+
+                # rottate directions 180° TODO (selfplay): auch alle Richtungen, die nicht benutzt werden, werden geändert (benutze torch.roll(next_obs[...], shifts=2, dims=...))
+            permutation = [21, 24, 25, 22, 23, 26, 29, 30, 27, 28, 31, 34, 35, 32, 33, 36, 39, 40, 37, 38]
+            for i, p in enumerate(permutation):
+                next_obs[1, :, :, i+21] = tmp[:, :, p]
+    
+            permutation = [49, 52, 53, 50, 51]
+            for i, p in enumerate(permutation):
+                next_obs[1, :, :, i+49] = tmp[:, :, p]
+
+def adjust_action_selfplay(args, device, valid_actions, valid_actions_counts):
+    if args.num_selfplay_envs > 1:
+            # Position anpassen
+        index = 0
+        for j, i in enumerate(valid_actions_counts):
+            
+            if j % 2 == 1 and j < args.num_selfplay_envs:
+                # Position anpassen
+                valid_actions[index:index+i, 0] = np.abs(valid_actions[index:index+i, 0] - 255)
+                # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
+                valid_actions[index:index+i, 2:6] = (valid_actions[index:index+i, 2:6] + 2) % 4
+                # relative attack position anpassen (nur für a_r = 7)
+                valid_actions[index:index+i, 7] = np.abs(valid_actions[index:index+i, 7] - 48)
+            index += i
+
+        # real_action[i, :, 0] = torch.tensor(range(255, -1, -1)).to(device)
+            # TO DO (selfplay): wird die Arrayposition der Spielpositionen vorausgesetzt? (muss es aufsteigend sortiert sein?) (wenn nicht --> unten entfernen)
+        # real_action[1:args.num_selfplay_envs:2] = real_action[1:args.num_selfplay_envs:2].flip(1)
+            
+            # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
+        # real_action[1:args.num_selfplay_envs:2, :, 2:6] = (real_action[1:args.num_selfplay_envs:2, :, 2:6] + 2) % 4
+            # relative attack position anpassen (nur für a_r = 7)
+        #real_action[1:args.num_selfplay_envs:2, :, 7] = torch.abs(real_action[1:args.num_selfplay_envs:2, :, 7] - 48)
+
+
+
 print("PPO training Setup")
 
 
@@ -1299,15 +1378,7 @@ ScFeatures = torch.zeros((args.num_steps, args.num_envs, 11)).to(device)
 ScFeatures[0] = getScalarFeatures(next_obs, res, args.num_envs)
 
 
-# transponiere jede zweite selfplay Umgebung (Spieler 1 -> Spieler 0)
-if args.num_selfplay_envs > 1:
-    if 2 < args.num_selfplay_envs:
-        tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
-        next_obs[1:args.num_selfplay_envs:2] = tmp
-        next_obs[1:args.num_selfplay_envs:2] = tmp
-    else:
-        tmp = next_obs[1].flip(0, 1).contiguous().clone()
-        next_obs[1] = tmp
+adjust_obs_selfplay(args, next_obs, is_new_env=True)
 
 next_done = torch.zeros(args.num_envs).to(device)
 num_updates = args.total_timesteps // args.batch_size
@@ -1325,17 +1396,6 @@ starting_update = 1
 
 
 
-# =========================
-# selfplay setup
-# =========================
-# TODO (selfplay): entfernen?
-from selfplay2 import Selfplay
-selfplay = Selfplay(num_selfplay_envs=args.num_selfplay_envs, main_agent=agent)
-
-# for step in range(0, args.num_selfplay_steps):
-#     with torch.no_grad():
-#         sp.selfplay_step()
-# =========================
 
 
 
@@ -1372,7 +1432,6 @@ for update in range(starting_update, num_updates + 1):
                 zFeatures[step][i] = agent.z_encoder(obs[step][i].view(-1))
 
         
-        # TODO (render) new
         if args.render:
             if args.render_all:
                 render_all_envs(envsT)
@@ -1408,15 +1467,6 @@ for update in range(starting_update, num_updates + 1):
         # print("Grid-Position:", [real_action[0][i][0].item() for i in
         # range(10)]) # -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-        # Anpassungen für Spieler 1 nach (Spieler 1 -> Spieler 0)
-        if args.num_selfplay_envs > 1:
-            # Position anpassen
-            real_action[1:args.num_selfplay_envs:2, :, 0] = torch.tensor(range(255, -1, -1)).to(device)
-            # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
-            real_action[1:args.num_selfplay_envs:2, :, 2:6] = (real_action[1:args.num_selfplay_envs:2, :, 2:6] + 2) % 4
-            # relative attack position anpassen (nur für a_r = 7)
-            real_action[1:args.num_selfplay_envs:2, :, 7] = torch.abs(real_action[1:args.num_selfplay_envs:2, :, 7] - 48)
-
         real_action = real_action.cpu().numpy()
     
         # =============
@@ -1433,6 +1483,12 @@ for update in range(starting_update, num_updates + 1):
                                     [:, :, 0].bool().cpu().numpy()]
         valid_actions_counts = invalid_action_masks[step][:, :, 0].sum(
             1).long().cpu().numpy()
+        
+
+        # Anpassungen für Spieler 1 nach (Spieler 1 -> Spieler 0)
+        adjust_action_selfplay(args, device, valid_actions, valid_actions_counts)
+        # TODO (selfplay): actions wurden bis hier für step 0 durchgegangen#########################################################################################################################################
+
         '''
         valid_actions:
         [[Pos, Type, move direction, harvest direction, return (recource) direction, produce direction, produce type, relative attack position],
@@ -1482,41 +1538,7 @@ for update in range(starting_update, num_updates + 1):
         if step + 1 < args.num_steps:
             ScFeatures[step+1] = getScalarFeatures(next_obs, res, args.num_envs)
 
-        if args.num_selfplay_envs > 1:
-            # jede zweite selfplay Umgebung:
-            if 2 < args.num_selfplay_envs:
-                tmp = next_obs[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
-
-                # flip Observations (Spieler 1 -> Spieler 0)
-                next_obs[1:args.num_selfplay_envs:2] = tmp
-
-                # switch players in the observation (player 1 -> player 0)
-                next_obs[1:args.num_selfplay_envs:2, :, :, 4:6:-1] = next_obs[1:args.num_selfplay_envs:2, :, :, 6:4]
-                next_obs[1:args.num_selfplay_envs:2, :, :, 59:66] = tmp[:, :, :, 66:73]
-                next_obs[1:args.num_selfplay_envs:2, :, :, 66:73] = tmp[:, :, :, 59:66]
-
-                # rottate directions 180°
-                next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] = (next_obs[1:args.num_selfplay_envs:2, :, :, 21:41] + 2) % 4
-                next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] = (next_obs[1:args.num_selfplay_envs:2, :, :, 49:54] + 2) % 4
-
-            else:
-                tmp = next_obs[1].flip(0, 1).contiguous().clone()
-                next_obs[1] = tmp
-
-                # switch players in the observation (player 1 -> player 0)
-                next_obs[1, :, :, 4] = tmp[:, :, 5]
-                next_obs[1, :, :, 5] = tmp[:, :, 4]
-                next_obs[1, :, :, 59:66] = tmp[:, :, 66:73]
-                next_obs[1, :, :, 66:73] = tmp[:, :, 59:66]
-
-                # rottate directions 180° TODO (selfplay): auch alle Richtungen, die nicht benutzt werden, werden geändert (benutze torch.roll(next_obs[...], shifts=2, dims=...))
-                permutation = [21, 24, 25, 22, 23, 26, 29, 30, 27, 28, 31, 34, 35, 32, 33, 36, 39, 40, 37, 38]
-                for i, p in enumerate(permutation):
-                    next_obs[1, :, :, i+21] = tmp[:, :, p]
-    
-                permutation = [49, 52, 53, 50, 51]
-                for i, p in enumerate(permutation):
-                    next_obs[1, :, :, i+49] = tmp[:, :, p]
+        adjust_obs_selfplay(args, next_obs)
 
         '''winloss = min(0.01, 6.72222222e-9 * global_step)
         densereward = max(0, 0.8 + (-4.44444444e-9 * global_step))
