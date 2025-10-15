@@ -836,15 +836,14 @@ class Agent(nn.Module):
         if action is None:
             all_arrays = []
             for i in range(envs.num_envs):
+                # TODO (selfplay): Die Methode gibt 2 mal die Maske für Player 0 zurück nicht die Maske für Player 1 in der Reprästentation von Player 0
                 arr = np.array(envs.debug_matrix_mask(i))
                 all_arrays.append(arr)
             mask = np.stack(all_arrays)
             
-            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env
-
-
             invalid_action_masks = torch.tensor(mask).to(device)
 
+            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env
             if args.num_selfplay_envs > 1:
                 if 2 < args.num_selfplay_envs:
                     tmp = invalid_action_masks[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
@@ -853,6 +852,7 @@ class Agent(nn.Module):
                     tmp = invalid_action_masks[1].flip(0, 1).contiguous().clone()
                     invalid_action_masks[1] = tmp
 
+            # es wird immer der erste Wert in der Maske entfernt, weil es immer eine Positionsangabe geben darf
             invalid_action_masks = invalid_action_masks.view(
                 -1, invalid_action_masks.shape[-1])
             split_invalid_action_masks = torch.split(
@@ -864,12 +864,12 @@ class Agent(nn.Module):
                 # TODO (optimieren): ineffizient
                 # da die Dimensionen hintereinander gepackt sind -> jede 256 Positionen (16*16) sind ein Grid
                 # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
-                for j in range(0, args.num_selfplay_envs, 2):
-                    for i in range(4):
-                        split_invalid_action_masks[i+1, 256*j:512*j] = torch.roll(split_invalid_action_masks[i+1, 256*j:512*j], shifts=2, dims=1)
+                for j in range(1, args.num_selfplay_envs, 2):
+                    for i in range(1, 5):
+                        split_invalid_action_masks[i][256*j:512*j] = torch.roll(split_invalid_action_masks[i][256*j:512*j], shifts=2, dims=1)
                         
                     # relative attack position anpassen (nur für a_r = 7)
-                    split_invalid_action_masks[6, 256*j:512*j] = split_invalid_action_masks[6, 256*j:512*j].flip(1)
+                    split_invalid_action_masks[6][256*j:512*j] = split_invalid_action_masks[6][256*j:512*j].flip(1)
             
             multi_categoricals = [
                 CategoricalMasked(logits=l, masks=m)
@@ -1478,8 +1478,9 @@ for update in range(starting_update, num_updates + 1):
             e.printStackTrace()
             raise
 
-
-        ScFeatures[step+1] = getScalarFeatures(next_obs, res, args.num_envs)
+        # TODO (selfplay): wenn die Schleife für updates neu anfängt: muss eigentlich noch ein mal getScalarFeatures ausgeführt werden
+        if step + 1 < args.num_steps:
+            ScFeatures[step+1] = getScalarFeatures(next_obs, res, args.num_envs)
 
         if args.num_selfplay_envs > 1:
             # jede zweite selfplay Umgebung:
