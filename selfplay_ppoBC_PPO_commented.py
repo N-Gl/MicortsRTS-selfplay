@@ -471,6 +471,12 @@ agent_type = torch.tensor([
     SelfplayAgentType.CUR_MAIN,
     SelfplayAgentType.CUR_MAIN,
     SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
+    SelfplayAgentType.CUR_MAIN,
 ], dtype=torch.long)
 assert args.num_selfplay_envs == len(agent_type), "Number of selfplay envs must be equal to the number of agent types (each agent plays against itself)"
 
@@ -833,6 +839,7 @@ class Agent(nn.Module):
         split_logits = torch.split(
             grid_logits, envs.action_plane_space.nvec.tolist(), dim=1)
         # print("split_logits size:", [l.size() for l in split_logits])
+        # logits sind so, wie Actions aufgebaut (ohne Position)
 
         if action is None:
             all_arrays = []
@@ -842,9 +849,14 @@ class Agent(nn.Module):
                 all_arrays.append(arr)
             mask = np.stack(all_arrays)
             
-            invalid_action_masks = torch.tensor(mask).to(device)
 
-            # TODO (selfplay): drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env (muss man nicht machen, da es schon in der debug_matrix_mask gemacht wird?) entfernen?
+            # drehe die Maske (Player 1 -> Player 0) für jedes 2te selfplay env
+            if args.num_selfplay_envs > 1:
+                mask[1:args.num_selfplay_envs:2] = np.flip(mask[1:args.num_selfplay_envs:2], (1, 2))
+            
+            
+
+            invalid_action_masks = torch.tensor(mask).to(device)
             # if args.num_selfplay_envs > 1:
             #     if 2 < args.num_selfplay_envs:
             #         tmp = invalid_action_masks[1:args.num_selfplay_envs:2].flip(1, 2).contiguous().clone()
@@ -852,6 +864,8 @@ class Agent(nn.Module):
             #     else:
             #         tmp = invalid_action_masks[1].flip(0, 1).contiguous().clone()
             #         invalid_action_masks[1] = tmp
+            
+            
 
             # es wird immer der erste Wert in der Maske entfernt, weil es immer eine Positionsangabe geben darf
             invalid_action_masks = invalid_action_masks.view(
@@ -862,16 +876,16 @@ class Agent(nn.Module):
             # split_invalid_action_masks: shape (16*16* num_envs, 7, ...)
             
 
-            # TODO (selfplay): muss man nicht machen, da es schon in der debug_matrix_mask gemacht wird? entfernen? und ineffizient
-            # if args.num_selfplay_envs > 1:
+            
+            if args.num_selfplay_envs > 1:
                 # da die Dimensionen hintereinander gepackt sind -> jede 256 Positionen (16*16) sind ein Grid
                 # Richtungen anpassen (move direction, harvest direction, return direction, produce direction)
-                # for j in range(1, args.num_selfplay_envs, 2):
-                #     for i in range(1, 5):
-                #         split_invalid_action_masks[i][256*j:512*j] = torch.roll(split_invalid_action_masks[i][256*j:512*j], shifts=2, dims=1)
-                #         
-                #     # relative attack position anpassen (nur für a_r = 7)
-                #     split_invalid_action_masks[6][256*j:512*j] = split_invalid_action_masks[6][256*j:512*j].flip(1)
+                for j in range(1, args.num_selfplay_envs, 2):
+                    for i in range(1, 5):
+                        split_invalid_action_masks[i][256*j:512*j, :] = torch.roll(split_invalid_action_masks[i][256*j:512*j, :], shifts=2, dims=1)
+                    
+                # relative attack position anpassen (nur für a_r = 7)
+                split_invalid_action_masks[6][256*j:512*j] = split_invalid_action_masks[6][256*j:512*j].flip(1)
             
             multi_categoricals = [
                 CategoricalMasked(logits=l, masks=m)
@@ -1468,7 +1482,6 @@ for update in range(starting_update, num_updates + 1):
         # range(10)]) # -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
         real_action = real_action.cpu().numpy()
-    
         # =============
         # invalid_action_masks angewandt
         # =============
